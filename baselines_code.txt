@@ -1,0 +1,213 @@
+"""
+Baseline Models Evaluation Module for AI-CLAR Research Benchmarks
+Provides comparative evaluation against standard ML algorithms:
+- Unsupervised: Isolation Forest (Primary), One-Class SVM, Local Outlier Factor (LOF)
+- Supervised (run when ground-truth labels exist, e.g. BGL): Random Forest, Logistic Regression, Support Vector Machine (SVM)
+Strictly adheres to identical 80/20 train/test splits and reproducible random seeds.
+"""
+import os
+import pandas as pd
+import numpy as np
+from typing import Dict, Any, List, Optional
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import IsolationForest, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, OneClassSVM
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score,
+    matthews_corrcoef, confusion_matrix
+)
+
+from backend.app.ml.dataset_adapters import dataset_adapter
+from backend.app.services.feature_extractor import feature_extractor
+from backend.app.services.anomaly_model import LOGHUB_FEATURE_NAMES, BASE_FEATURE_NAMES
+from backend.app.utils.logger import logger
+
+
+def evaluate_baselines(
+    dataset_name: str = "BGL",
+    contamination: float = 0.15,
+    random_state: int = 42,
+    max_records: Optional[int] = None
+) -> Dict[str, Any]:
+    """
+    Trains and evaluates baseline models on the specified dataset using the same
+    80/20 train/test protocol as the primary Isolation Forest.
+    """
+    ds_norm = dataset_name.strip()
+    is_synthetic = ds_norm.lower() in {"synthetic", "demo", "default"}
+    is_bgl_full = ds_norm.lower() in {"bgl_full", "bgl-full", "bglfull"}
+
+    if is_synthetic:
+        from backend.app.services.anomaly_model import anomaly_model
+        df = anomaly_model.generate_synthetic_telemetry_dataset(n_samples=200)
+        feature_cols = BASE_FEATURE_NAMES
+        has_labels = False
+        ds_title = "Synthetic Telemetry"
+    elif is_bgl_full:
+        from backend.app.services.anomaly_model import anomaly_model
+        train_csv = os.path.join(anomaly_model.data_dir, "training_data_bgl_full.csv")
+        test_csv = os.path.join(anomaly_model.data_dir, "testing_data_bgl_full.csv")
+        if os.path.exists(train_csv) and os.path.exists(test_csv) and not max_records:
+            train_df = pd.read_csv(train_csv)
+            test_df = pd.read_csv(test_csv)
+            df = pd.concat([train_df, test_df], ignore_index=True)
+        else:
+            feature_records = list(dataset_adapter.stream_dataset_windows(
+                "BGL_full", window_size=20, step_size=10, max_records=max_records or 2000
+            ))
+            df = pd.DataFrame(feature_records)
+        feature_cols = LOGHUB_FEATURE_NAMES
+        has_labels = True
+        ds_title = "BGL_full"
+    else:
+        target_ds = "BGL_2k" if ds_norm.lower() in {"bgl", "bgl_2k"} else ds_norm
+        logs, meta = dataset_adapter.load_dataset(target_ds, max_records=max_records)
+        feature_records = feature_extractor.extract_dataset_features(logs, window_size=20, step_size=10)
+        df = pd.DataFrame(feature_records)
+        feature_cols = LOGHUB_FEATURE_NAMES
+        has_labels = meta.get("has_ground_truth_labels", False)
+        ds_title = meta.get("dataset_name", ds_norm)
+
+    for col in feature_cols:
+        if col not in df.columns:
+            df[col] = 0.0
+        else:
+            df[col] = df[col].fillna(0.0)
+
+    # Identical 80/20 Train/Test Split
+    train_df, test_df = train_test_split(
+        df,
+        test_size=0.20,
+        random_state=random_state,
+        shuffle=True
+    )
+
+    X_train = train_df[feature_cols].values
+    X_test = test_df[feature_cols].values
+    n_test = len(test_df)
+
+    y_test = None
+    if has_labels and "is_anomaly_label" in test_df.columns:
+        y_test = test_df["is_anomaly_label"].fillna(0).astype(int).values
+
+    y_train = None
+    if has_labels and "is_anomaly_label" in train_df.columns:
+        y_train = train_df["is_anomaly_label"].fillna(0).astype(int).values
+
+    # Kernel estimators (SVM, LOF) scale quadratically; cap training samples to maintain interactive performance
+    MAX_KERNEL_SAMPLES = 5000
+    if len(X_train) > MAX_KERNEL_SAMPLES:
+        sub_indices = np.random.RandomState(random_state).choice(len(X_train), MAX_KERNEL_SAMPLES, replace=False)
+        X_train_kernel = X_train[sub_indices]
+        y_train_kernel = y_train[sub_indices] if y_train is not None else None
+    else:
+        X_train_kernel = X_train
+        y_train_kernel = y_train
+
+    models_results: Dict[str, Any] = {}
+
+    # 1. Isolation Forest (Primary AI-CLAR Model)
+    iso = IsolationForest(n_estimators=100, contamination=contamination, random_state=random_state, n_jobs=1)
+    iso.fit(X_train)
+    iso_preds = iso.predict(X_test)
+    y_pred_iso = (iso_preds == -1).astype(int)
+    models_results["Isolation Forest"] = _compile_metrics("Isolation Forest", "Unsupervised Tree Ensemble", y_test, y_pred_iso, n_test)
+
+    # 2. One-Class SVM (Unsupervised Baseline)
+    try:
+        oc_svm = OneClassSVM(nu=min(max(contamination, 0.01), 0.5), kernel="rbf", gamma="scale")
+        oc_svm.fit(X_train_kernel)
+        oc_preds = oc_svm.predict(X_test)
+        y_pred_oc = (oc_preds == -1).astype(int)
+        models_results["One-Class SVM"] = _compile_metrics("One-Class SVM", "Unsupervised Boundary", y_test, y_pred_oc, n_test)
+    except Exception as e:
+        logger.warning("One-Class SVM baseline evaluation error: %s", e)
+
+    # 3. Local Outlier Factor (LOF Novelty Detection)
+    try:
+        n_neighbors = min(20, len(X_train_kernel) - 1)
+        lof = LocalOutlierFactor(n_neighbors=n_neighbors, contamination=contamination, novelty=True)
+        lof.fit(X_train_kernel)
+        lof_preds = lof.predict(X_test)
+        y_pred_lof = (lof_preds == -1).astype(int)
+        models_results["Local Outlier Factor"] = _compile_metrics("Local Outlier Factor (LOF)", "Unsupervised Density", y_test, y_pred_lof, n_test)
+    except Exception as e:
+        logger.warning("LOF baseline evaluation error: %s", e)
+
+    # 4. Supervised Baselines (ONLY when ground-truth labels exist)
+    if has_labels and y_train is not None and len(np.unique(y_train)) > 1:
+        # Random Forest Classifier
+        try:
+            rf = RandomForestClassifier(n_estimators=100, random_state=random_state)
+            rf.fit(X_train, y_train)
+            rf_preds = rf.predict(X_test)
+            models_results["Random Forest"] = _compile_metrics("Random Forest", "Supervised Tree Ensemble", y_test, rf_preds, n_test)
+        except Exception as e:
+            logger.warning("Random Forest baseline error: %s", e)
+
+        # Logistic Regression
+        try:
+            lr = LogisticRegression(max_iter=1000, random_state=random_state)
+            lr.fit(X_train, y_train)
+            lr_preds = lr.predict(X_test)
+            models_results["Logistic Regression"] = _compile_metrics("Logistic Regression", "Supervised Linear", y_test, lr_preds, n_test)
+        except Exception as e:
+            logger.warning("Logistic Regression baseline error: %s", e)
+
+        # Support Vector Machine (SVM)
+        try:
+            svm = SVC(kernel="rbf", random_state=random_state)
+            svm.fit(X_train_kernel, y_train_kernel)
+            svm_preds = svm.predict(X_test)
+            models_results["SVM"] = _compile_metrics("Support Vector Machine (SVM)", "Supervised Kernel", y_test, svm_preds, n_test)
+        except Exception as e:
+            logger.warning("SVM baseline error: %s", e)
+
+    return {
+        "dataset_name": ds_title,
+        "has_ground_truth_labels": has_labels,
+        "train_samples": len(train_df),
+        "test_samples": len(test_df),
+        "feature_count": len(feature_cols),
+        "random_state": random_state,
+        "models": models_results
+    }
+
+
+def _compile_metrics(
+    name: str,
+    paradigm: str,
+    y_true: Optional[np.ndarray],
+    y_pred: np.ndarray,
+    n_test: int
+) -> Dict[str, Any]:
+    outliers_flagged = int(np.sum(y_pred == 1))
+    outlier_pct = round((outliers_flagged / max(n_test, 1)) * 100, 2)
+
+    res: Dict[str, Any] = {
+        "model_name": name,
+        "paradigm": paradigm,
+        "outliers_flagged": outliers_flagged,
+        "outlier_percentage": outlier_pct,
+    }
+
+    if y_true is not None and len(y_true) > 0:
+        acc = round(float(accuracy_score(y_true, y_pred)), 4)
+        prec = round(float(precision_score(y_true, y_pred, zero_division=0)), 4)
+        rec = round(float(recall_score(y_true, y_pred, zero_division=0)), 4)
+        f1 = round(float(f1_score(y_true, y_pred, zero_division=0)), 4)
+        mcc = round(float(matthews_corrcoef(y_true, y_pred)), 4)
+        cm = confusion_matrix(y_true, y_pred, labels=[0, 1]).tolist()
+
+        res["accuracy"] = acc
+        res["precision"] = prec
+        res["recall"] = rec
+        res["f1_score"] = f1
+        res["mcc"] = mcc
+        res["confusion_matrix"] = cm
+    else:
+        res["note"] = "Dataset is unlabeled; supervised classification metrics are omitted."
+
+    return res

@@ -1,0 +1,62 @@
+[
+  {
+    "timestamp": "2026-09-07 14:10:05",
+    "server": "server-02",
+    "service": "authentication",
+    "severity": "WARNING",
+    "message": "Failed password attempt for user 'root' from 198.51.100.42 port 49202 ssh2",
+    "status_code": 401,
+    "ip": "198.51.100.42",
+    "response_time": 95.0
+  },
+  {
+    "timestamp": "2026-09-07 14:10:10",
+    "server": "server-02",
+    "service": "authentication",
+    "severity": "WARNING",
+    "message": "Failed password attempt for user 'admin' from 198.51.100.42 port 49204 ssh2",
+    "status_code": 401,
+    "ip": "198.51.100.42",
+    "response_time": 84.0
+  },
+  {
+    "timestamp": "2026-09-07 14:10:15",
+    "server": "server-02",
+    "service": "authentication",
+    "severity": "WARNING",
+    "message": "Failed password attempt for user 'devops' from 198.51.100.42 port 49206 ssh2",
+    "status_code": 401,
+    "ip": "198.51.100.42",
+    "response_time": 78.0
+  },
+  {
+    "timestamp": "2026-09-07 14:10:22",
+    "server": "server-02",
+    "service": "authentication",
+    "severity": "ERROR",
+    "message": "Auth failure rate threshold triggered: 15 failed logins/min from subnet 198.51.100.0/24",
+    "status_code": 401,
+    "ip": "198.51.100.42",
+    "response_time": 110.0
+  },
+  {
+    "timestamp": "2026-09-07 14:10:30",
+    "server": "server-02",
+    "service": "authentication",
+    "severity": "CRITICAL",
+    "message": "Multiple authentication failures: Potential brute-force dictionary attack detected from 198.51.100.42",
+    "status_code": 401,
+    "ip": "198.51.100.42",
+    "response_time": 125.0
+  },
+  {
+    "timestamp": "2026-09-07 14:10:45",
+    "server": "server-02",
+    "service": "authentication",
+    "severity": "CRITICAL",
+    "message": "Security policy violation: automated credential stuffing pattern flagged",
+    "status_code": 403,
+    "ip": "198.51.100.42",
+    "response_time": 5.0
+  }
+]

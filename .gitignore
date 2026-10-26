@@ -1,0 +1,7 @@
+data/BGL/BGL_full.log
+data/BGL/BGL_full.log_structured.csv
+data/training_data_bgl_full_labeled.csv
+venv/
+.venv/
+__pycache__/
+.env

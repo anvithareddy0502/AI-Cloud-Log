@@ -1,0 +1,40 @@
+{
+  "algorithm": "Isolation Forest",
+  "model_version": "2.1.0",
+  "dataset_name": "Synthetic Telemetry",
+  "training_status": "Trained",
+  "is_supervised": false,
+  "has_ground_truth_labels": false,
+  "contamination_value": 0.15,
+  "random_state": 42,
+  "number_of_features": 12,
+  "feature_names": [
+    "total_events",
+    "error_count",
+    "warning_count",
+    "info_count",
+    "critical_count",
+    "error_rate",
+    "events_per_minute",
+    "avg_response_time",
+    "max_response_time",
+    "http_4xx_count",
+    "http_5xx_count",
+    "failed_login_count"
+  ],
+  "number_of_training_samples": 160,
+  "number_of_testing_samples": 40,
+  "trained_at": "2026-09-21 16:40:16 UTC",
+  "evaluation_summary": {
+    "test_samples_count": 40,
+    "predicted_anomalies_count": 5,
+    "anomaly_percentage": 12.5,
+    "anomaly_score_summary": {
+      "min": 0.33,
+      "mean": 0.391,
+      "max": 0.648,
+      "std": 0.083
+    },
+    "evaluation_type": "Unsupervised Outlier Profiling (No ground-truth labels required)"
+  }
+}

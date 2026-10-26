@@ -1,0 +1,12 @@
+2026-09-07 14:00:01 [server-01] [web-server] INFO: GET /healthz 200 OK latency=4.2ms ip=10.0.1.14
+2026-09-07 14:00:03 [server-01] [web-server] INFO: GET /api/v1/products 200 OK latency=18.5ms ip=10.0.1.14
+2026-09-07 14:00:05 [server-04] [payment-api] INFO: POST /api/v1/checkout/session 200 OK latency=45.1ms ip=10.0.2.52
+2026-09-07 14:00:08 [server-05] [database] INFO: PostgreSQL connection acquired from pool latency=1.2ms ip=10.0.3.11
+2026-09-07 14:00:10 [server-02] [authentication] INFO: User login token validated successfully 200 OK latency=12.0ms ip=10.0.1.28
+2026-09-07 14:00:12 [server-01] [web-server] INFO: Nginx upstream keepalive connection refreshed latency=2.1ms ip=10.0.1.14
+2026-09-07 14:00:15 [server-04] [payment-api] INFO: Stripe webhook acknowledged 200 OK latency=68.4ms ip=10.0.2.52
+2026-09-07 14:00:18 [server-05] [database] INFO: SELECT query executed on 'catalog_items' latency=8.4ms ip=10.0.3.11
+2026-09-07 14:00:20 [server-02] [authentication] INFO: OAuth2 refresh token issued 200 OK latency=15.2ms ip=10.0.1.28
+2026-09-07 14:00:22 [server-01] [web-server] INFO: GET /assets/app.js 200 OK latency=3.5ms ip=10.0.1.14
+2026-09-07 14:00:25 [server-04] [payment-api] INFO: Charge completed for tx_88123 200 OK latency=120.0ms ip=10.0.2.52
+2026-09-07 14:00:30 [server-05] [network] INFO: Internal RPC mesh packet transmitted without loss latency=0.8ms ip=10.0.3.11

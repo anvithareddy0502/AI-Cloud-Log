@@ -1,0 +1,67 @@
+{
+  "algorithm": "Isolation Forest",
+  "model_version": "2.1.0",
+  "dataset_name": "BGL_2k",
+  "training_status": "Trained",
+  "is_supervised": false,
+  "has_ground_truth_labels": true,
+  "contamination_value": 0.15,
+  "random_state": 42,
+  "number_of_features": 16,
+  "feature_names": [
+    "total_events",
+    "error_count",
+    "warning_count",
+    "info_count",
+    "critical_count",
+    "error_rate",
+    "warning_rate",
+    "events_per_minute",
+    "unique_event_ids",
+    "unique_components",
+    "template_entropy",
+    "avg_response_time",
+    "max_response_time",
+    "http_4xx_count",
+    "http_5xx_count",
+    "failed_login_count"
+  ],
+  "number_of_training_samples": 159,
+  "number_of_testing_samples": 40,
+  "trained_at": "2026-09-21 18:59:29 UTC",
+  "evaluation_summary": {
+    "test_samples_count": 40,
+    "predicted_anomalies_count": 9,
+    "anomaly_percentage": 22.5,
+    "anomaly_score_summary": {
+      "min": 0.314,
+      "mean": 0.401,
+      "max": 0.602,
+      "std": 0.086
+    },
+    "evaluation_type": "Supervised Ground-Truth Benchmark Evaluation",
+    "supervised_metrics": {
+      "accuracy": 0.65,
+      "precision": 0.4444,
+      "recall": 0.3077,
+      "f1_score": 0.3636,
+      "mcc": 0.1374,
+      "confusion_matrix": [
+        [
+          22,
+          5
+        ],
+        [
+          9,
+          4
+        ]
+      ],
+      "false_positive_rate": 0.1852,
+      "false_negative_rate": 0.6923,
+      "true_positives": 4,
+      "false_positives": 5,
+      "true_negatives": 22,
+      "false_negatives": 9
+    }
+  }
+}

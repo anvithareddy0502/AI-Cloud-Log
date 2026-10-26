@@ -1,0 +1,11 @@
+timestamp,server,service,severity,message,status_code,response_time,ip,cpu_usage,memory_usage,correlation_id
+2026-09-07 14:19:10,server-03,database,WARNING,Active database connection pool reached 92% capacity (460/500),200,85.2,10.0.2.45,74.5,82.1,corr-db-9842
+2026-09-07 14:19:30,server-03,database,WARNING,High memory consumption detected on worker thread backend_postgres_worker_42,200,120.4,10.0.2.45,88.1,91.2,corr-db-9842
+2026-09-07 14:20:00,server-03,database,CRITICAL,FATAL: remaining connection slots are reserved for non-replication superuser connections (max_connections=500),500,3200.0,10.0.2.45,96.8,94.5,corr-db-9842
+2026-09-07 14:20:15,server-03,database,ERROR,Connection pool HikariCP-1 failed to deliver connection in 30000ms. Active: 500 Idle: 0 Waiting: 48,500,30000.0,10.0.2.45,97.2,95.0,corr-db-9842
+2026-09-07 14:20:45,server-04,payment-api,ERROR,Payment processing aborted: could not acquire database lease for transaction tx_992144,500,4500.0,10.0.2.52,65.4,55.0,corr-db-9842
+2026-09-07 14:21:00,server-04,payment-api,ERROR,HTTP 504 Gateway Timeout returned to client on POST /api/v1/payments/charge,504,5012.0,10.0.2.52,70.2,56.1,corr-db-9842
+2026-09-07 14:21:15,server-04,payment-api,CRITICAL,Database connection timeout cascade: 45 concurrent payment operations dropped,503,5000.0,10.0.2.52,78.9,62.4,corr-db-9842
+2026-09-07 14:21:30,server-03,database,CRITICAL,PostgreSQL database unavailable: connection backlog queue overflow,500,4200.0,10.0.2.45,98.5,96.0,corr-db-9842
+2026-09-07 14:21:45,server-04,payment-api,ERROR,Transaction aborted: downstream PostgreSQL node Server-03 unresponsive,500,3800.0,10.0.2.52,75.1,60.2,corr-db-9842
+2026-09-07 14:22:00,server-04,payment-api,ERROR,HTTP 500 Internal Server Error in order dispatch pipeline,500,2900.0,10.0.2.52,72.4,58.9,corr-db-9842
